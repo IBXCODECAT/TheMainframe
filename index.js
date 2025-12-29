@@ -1,4 +1,6 @@
-require('dotenv').config()
+require('dotenv').config();
+const fs = require('fs');
+const path = require('path');
 
 const { Client, GatewayIntentBits, Partials, Events } = require('discord.js')
 
@@ -25,19 +27,20 @@ client.on(Events.GuildCreate, async (guild) => {
     }
 });
 
-// --- INITIALIZATION ---
+const eventsPath = path.join(__dirname, 'events');
+const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
 
-client.once(Events.ClientReady, async (c) => {
-    console.log(`[SYSTEM ONLINE] Mainframe Unit ${c.user.tag} operational.`);
+for (const file of eventFiles) {
+    const filePath = path.join(eventsPath, file);
+    const event = require(filePath);
 
-    // Startup Sweep: Ensure we aren't in unauthorized guilds from downtime
-    client.guilds.cache.forEach(async (guild) => {
-        if (guild.id !== AUTHORIZED_ID) {
-            console.log(`[CLEANUP] Leaving unauthorized guild: ${guild.name}`);
-            await guild.leave();
-        }
-    });
-});
+    // If the event is meant to run only once (ex; ready)
+    if(event.once) {
+        client.once(event.name, (...args) => event.execute(...args, client));
+    } else {
+        client.on(event.name, (...args) => event.execute(...args, client));
+    }
+}
 
 // Log in to Discord
 client.login(process.env.DISCORD_TOKEN);
