@@ -18,21 +18,15 @@ const client = new Client({
 
 const AUTHORIZED_ID = process.env.AUTHORIZED_GUILD_ID;
 
-// --- SECURITY LOGIC: AUTO-LEAVE ---
-
-client.on(Events.GuildCreate, async (guild) => {
-    if (guild.id !== AUTHORIZED_ID) {
-        console.log(`[SECURITY] Unauthorized join attempt: ${guild.name} (${guild.id}). Leaving...`);
-        await guild.leave();
-    }
-});
-
 const eventsPath = path.join(__dirname, 'events');
 const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
 
 for (const file of eventFiles) {
     const filePath = path.join(eventsPath, file);
     const event = require(filePath);
+
+    // Log each event as it is loaded
+    console.log(`[MODULE LOADED] Event: ${event.name} | Source: ${file}`);
 
     // If the event is meant to run only once (ex; ready)
     if(event.once) {
